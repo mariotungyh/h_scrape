@@ -1,0 +1,138 @@
+import json
+import smtplib
+import ssl
+import re
+import random, time
+from datetime import datetime
+import certifi as certifi
+import requests
+from urllib3 import util, ProxyManager, PoolManager
+
+sku_set = {'H069574CK1Q', 'H051568CK4B', 'H060991CC89', 'H070416CCBB', 'H077640CCAJ', 'H073430CC63', 'H069426CCCI', 'H082027CC89', 'H073428CK1H', 'H082608CC3P', 'H082817CCAI', 'H073444CCU4', 'H082060CCT0', 'H079086CC2S', 'H079086CK08', 'H079195CK3Q', 'H082608CK18', 'H073430CK80', 'H082901CCAF', 'H079086CCQ1', 'H083433CCAA', 'H069426CCBI', 'H082943CCAG', 'H082028CK2Z', 'H077640CCAK', 'H056289CC37', 'H080253CC37', 'H079086CC6C', 'H069426CKBF', 'H083189CKAD', 'H069426CKCP', 'H056289CK4B', 'H070510CPJ7', 'H077888CKAF', 'H079086CCS4', 'H070510CK80', 'H070510CCM8', 'H082607CCAA', 'H069426CKBX', 'H073428CC80', 'H079086CC80', 'H073428CC37', 'H070510CP8F', 'H073428CK6O', 'H070416CKBC', 'H073598CKD0', 'H056289CCS4', 'H073597CC0M', 'H060991CKS2', 'H082943CCAA', 'H073430CKD0', 'H075180CKP3', 'H073428CC2Z', 'H073597CKD0', 'H082660CKAJ', 'H060991CC0M', 'H075180CC37', 'H080125CD89', 'H073428CC6O', 'H073428CC10', 'H079099CKAC', 'H069426CKBO', 'H083130CKAE', 'H080253CK89', 'H082153CCAM', 'H070416CKAS', 'H082607CCAE', 'H082321CKAP', 'H082153CKAG', 'H069426CCCP', 'H069426CCCW', 'H083010CAAU', 'H082131CC34', 'H079086CK37', 'H073430CC8F', 'H082607CCAO', 'H060991CK3Q', 'H069426CCCU', 'H056289CC80', 'H080253CC89', 'H079086CKI2', 'H073444CKX9', 'H056289CK8F', 'H082027CKQ1', 'H073428CC18', 'H073428CC2S', 'H082153CCAY', 'H070510CK01', 'H079195CPI2', 'H051568CK18', 'H082161CC63', 'H069560CKAY', 'H083189CKAA', 'H073444CC18', 'H073597CC61', 'H069426CKCU', 'H073444CK1S', 'H056289CCQ1', 'H060991CK10', 'H082027CKI2', 'H073444CK01', 'H082607CCAP', 'H082607CCAB', 'H077640CCAA', 'H060991CC0L', 'H082161CK0L', 'H073430CC2Z', 'H079086CKP9', 'H082660CCAH', 'H056289CK1Z', 'H073597CCD0', 'H079086CK2S', 'H079086CC2Z', 'H077640CKAR', 'H080175CKAD', 'H082608CCI2', 'H056289CKJ7', 'H056289CK80', 'H079103CKK4', 'H075180CC4E', 'H082901CKAF', 'H073428CKY7', 'H070416CCAT', 'H079086CK9D', 'H079086CC7Q', 'H082060CC4B', 'H080125CC8F', 'H069426CCBS', 'H069560CKAV', 'H080253CK2Z', 'H080253CK18', 'H080255CC2J', 'H073444CC6H', 'H069560CKAQ', 'H082027CK3G', 'H075180CK36', 'H082028CC28', 'H073598CC0M', 'H082943CKAA', 'H082943CKAG', 'H060991CKI2', 'H080175CKAC', 'H080253CC2Z', 'H080125CC3P', 'H082798CC3G', 'H069426CCCY', 'H060991CK0M', 'H069447CKAE', 'H073601CKAE', 'H079086CC08', 'H069426CKCW', 'H082608CKX9', 'H080253CCT0', 'H075180CK37', 'H079086CC0E', 'H082798CK3G', 'H056289CK0L', 'H073428CKQ1', 'H082161CC37', 'H069426CCBO', 'H079086CC63', 'H075180CC9D', 'H056289CCY7', 'H082028CK8F', 'H056289CC6C', 'H082161CK8F', 'H082060CK37', 'H080126CK37', 'H082901CKAO', 'H082608CC37', 'H070510CPD0', 'H064422CKS2', 'H069426CKAT', 'H079086CK63', 'H082608CCS4', 'H056289CK0M', 'H073428CK80', 'H073610CK34', 'H060991CC1Z', 'H077640CCAW', 'H073597CK37', 'H077640CCAQ', 'H073428CC89', 'H073583CCAB', 'H082608CK1Z', 'H056289CK08', 'H080125CKI2', 'H079086CK36', 'H056289CK6O', 'H079086CK9R', 'H079103CKW0', 'H079086CK4B', 'H077640CKAA', 'H080253CKT0', 'H082028CC37', 'H056289CC0L', 'H070510CP63', 'H070416CKAT', 'H080125CCT0', 'H056289CC8L', 'H073428CKI2', 'H082901CKAA', 'H079086CCI2', 'H079086CK6C', 'H079195CP18', 'H082798CC18', 'H082028CCC6', 'H082027CK10', 'H079195CKT0', 'H079086CKS2', 'H079086CC10', 'H079195CKI2', 'H082153CKAI', 'H060991CK4B', 'H060991CC8F', 'H056289CC4B', 'H075180CK8U', 'H079086CC8W', 'H073582CCAF', 'H082607CKAP', 'H060991CC37', 'H056289CKS2', 'H060991CK8L', 'H082214CC8U', 'H083010CAAP', 'H060991CK08', 'H079086CKS4', 'H070510CK8U', 'H080125CC18', 'H079086CKX9', 'H079195CK18', 'H080255CK18', 'H073444CCK4', 'H079086CCP9', 'H079086CC1Z', 'H069426CKDD', 'H079194CA89', 'H073598CKS4', 'H082607CKAH', 'H082027CKX9', 'H060991CKQ1', 'H082027CC4B', 'H060991CCS2', 'H079086CKP3', 'H060991CK8F', 'H069426CCAT', 'H075336CC34', 'H080125CK9D', 'H080125CK8F', 'H082608CC76', 'H051568CK89', 'H073430CK2Z', 'H077640CKAL', 'H083189CKAB', 'H079086CK0G', 'H078999CKAB', 'H075180CC80', 'H073597CC73', 'H079086CC0F', 'H073428CC08', 'H080253CCI2', 'H083010CAAO', 'H080125CK37', 'H080125CK5P', 'H082060CC3G', 'H069426CKBE', 'H082060CC89', 'H082608CCG8', 'H079086CK8F', 'H083010CAAS', 'H056289CC08', 'H073598CC2S', 'H080253CK37', 'H082608CC3I', 'H073428CK8F', 'H064422CKM8', 'H073601CKAF', 'H069426CCCR', 'H073597CCO8', 'H082060CK3G', 'H082321CCAL', 'H077640CKAJ', 'H080311CCAC', 'H070416CCAU', 'H069426CCCO', 'H079086CCP3', 'H079086CK89', 'H060991CK6O', 'H073430CK37', 'H073428CCY7', 'H080125CD8F', 'H082060CC1Z', 'H073428CK2Z', 'H073444CK6H', 'H083176CAAA', 'H056289CK8L', 'H060991CK2Z', 'H069426CKCR', 'H073430CK8F', 'H082060CD10', 'H075180CK8F', 'H077640CKAC', 'H073444CCT0', 'H077640CCAC', 'H080125CC37', 'H080254CKAI', 'H083433CKAA', 'H079103CKS4', 'H073598CC73', 'H073430CCW0', 'H073428CC1H', 'H077888CCAF', 'H056289CC89', 'H073444CCR9', 'H082607CKAO', 'H082060CCI2', 'H056289CC10', 'H083010CAAN', 'H082607CCAK', 'H069426CCBM', 'H079086CC6W', 'H075180CK8W', 'H079086CK8W', 'H080311CKAC', 'H082798CKY7', 'H073428CK10', 'H073694CC89', 'H056289CCJ7', 'H070510CK8F', 'H080253CC10', 'H070510CP80', 'H075180CC8U', 'H080243CKAB', 'H056289CKX9', 'H082060CKI2', 'H082028CKC6', 'H056289CCS2', 'H073428CCI2', 'H076293CKAK', 'H060991CC18', 'H073428CK18', 'H073610CP34', 'H082060CC18', 'H069574CK10', 'H082027CK89', 'H073597CC2S', 'H051568CK10', 'H082214CC37', 'H082660CCAF', 'H082027CC10', 'H073444CC2J', 'H073430CCD0', 'H079086CC36', 'H082607CKAN', 'H069426CKAG', 'H077640CCAB', 'H077913CC34', 'H082608CC2S', 'H079086CK2Z', 'H080253CC18', 'H082060CD89', 'H069426CKBS', 'H080125CK10', 'H073428CK89', 'H051568CKM8', 'H082608CCT0', 'H075180CC8W', 'H082027CC18', 'H082153CCAG', 'H082798CC2S', 'H073444CK3I', 'H069426CKCI', 'H073444CK0F', 'H073428CC4B', 'H073444CC1Q', 'H079086CC4B', 'H075180CKC6', 'H079086CC46', 'H073428CC01', 'H056289CC2Z', 'H079086CK7Q', 'H070510CK0L', 'H069426CKAV', 'H082608CKG8', 'H073444CKT0', 'H082153CCAF', 'H051568CK37', 'H069426CCBF', 'H073444CK2J', 'H069426CCCF', 'H082027CK37', 'H060991CK18', 'H073444CCX9', 'H051568CK76', 'H077640CKAK', 'H079086CC37', 'H070510CP8U', 'H073444CCW0', 'H080255CK2J', 'H082607CCAH', 'H069426CKCO', 'H075180CC8F', 'H073428CCS2', 'H073598CCD0', 'H060991CCY7', 'H082660CCAJ', 'H079086CK46', 'H073444CK1Q', 'H079103CCV0', 'H069426CKCX', 'H079086CKY7', 'H079209CA89', 'H082060CC37', 'H056289CK2Z', 'H073428CC6C', 'H083289CAAO', 'H082608CC18', 'H051568CK6O', 'H060991CC08', 'H073444CK9R', 'H060991CCI2', 'H060991CK1Z', 'H079086CK0E', 'H082161CCJ7', 'H073444CC9R', 'H073444CKW0', 'H080126CC37', 'H082027CK18', 'H069426CKDA', 'H073428CCQ1', 'H073444CC1S', 'H082028CC8F', 'H070416CCBC', 'H075180CC36', 'H082607CKAA', 'H073444CK18', 'H077888CKAH', 'H080253CK10', 'H069426CCAG', 'H082027CC37', 'H082153CCAN', 'H082161CKJ7', 'H082608CK37', 'H083440CCAA', 'H070416CKAU', 'H073430CC28', 'H079086CCS2', 'H082608CK76', 'H082901CKAR', 'H079086CC6O', 'H079086CKQ1', 'H070510CKD0', 'H082608CK3P', 'H070510CK63', 'H082608CK3Q', 'H069426CKCY', 'H073428CK37', 'H082608CKV0', 'H080255CC18', 'H069574CKI2', 'H075200CK2S', 'H056289CK18', 'H080125CC1Z', 'H060991CC4B', 'H056289CKY7', 'H082028CK01', 'H079086CK1Z', 'H082153CKAM', 'H056289CC8F', 'H069426CKBI', 'H077887CKAE', 'H056289CKQ1', 'H073444CCI2', 'H073444CKR9', 'H079086CC9D', 'H073597CC37', 'H056289CC6O', 'H080175CKAB', 'H080254CCAI', 'H073428CK4B', 'H069426CCBE', 'H082798CCY7', 'H056289CC6H', 'H082660CKAF', 'H060991CC6O', 'H073597CKS4', 'H077888CKAG', 'H082027CCI2', 'H069426CCCX', 'H075200CKD0', 'H082608CC1Z', 'H082060CC8F', 'H082214CK37', 'H075180CK9D', 'H073444CC9D', 'H079103CKP9', 'H073598CCS4', 'H060991CC10', 'H073428CC8F', 'H080125CK89', 'H075180CK80', 'H056289CK10', 'H080126CK2Z', 'H082601CKAA', 'H082798CCI2', 'H069426CKCZ', 'H077888CKAA', 'H075180CCP3', 'H060991CC8L', 'H060991CC2Z', 'H070416CKAP', 'H070510CP8L', 'H079086CC18', 'H080253CK1Q', 'H082499CKAE', 'H056289CKI2', 'H070510CP37', 'H082608CKI2', 'H075180CK01', 'H078999CCAB', 'H082608CC80', 'H069426CKBU', 'H082060CK8F', 'H076293CKAJ', 'H073428CKX9', 'H079086CK8L', 'H082601CCAA', 'H073444CKU4', 'H075336CK34', 'H082153CCAI', 'H076297CKAB', 'H080311CCAB', 'H082607CCAL', 'H060991CK80', 'H056289CK37', 'H073430CC8U', 'H082608CKP9', 'H079086CCY7', 'H073430CK8U', 'H073430CK28', 'H077888CCAA', 'H080125CK18', 'H080125CC89', 'H082060CK18', 'H051568CK1C', 'H082028CKG8', 'H082608CKT0', 'H073428CC8L', 'H080125CC3I', 'H082798CK18', 'H077640CKAW', 'H082027CK4B', 'H079086CK18', 'H064422CK7G', 'H073428CK8L', 'H080253CKX9', 'H079086CC8F', 'H082608CCV0', 'H075180CC01', 'H079086CC89', 'H082027CC3G', 'H073597CCS4', 'H082607CKAE', 'H073597CCM8', 'H079086CK0F', 'H077640CKAQ', 'H082028CK8U', 'H070510CK37', 'H082608CK3I', 'H079086CK10', 'H082607CCAN', 'H082607CKAL', 'H073601CKAD', 'H082027CCS2', 'H073444CC3I', 'H079086CC9R', 'H060991CK89', 'H082607CKAB', 'H069426CCDD', 'H079086CK6O', 'H073444CC01', 'H075180CC3I', 'H060991CCQ1', 'H051568CK8L', 'H073428CK01', 'H069426CKBP', 'H051568CKI2', 'H083189CKAC', 'H083433CCAB', 'H069426CCAV', 'H070416CCAP', 'H073430CC80', 'H080126CC2Z', 'H073444CK89', 'H070510CC8U', 'H073601CCAD', 'H082027CC6O', 'H083011CAAT', 'H075180CCC6', 'H080125CD10', 'H073430CC37', 'H073444CC89', 'H056289CK3Q', 'H056289CC0M', 'H056289CCI2', 'H056289CK89', 'H082608CK80', 'H079086CC0G', 'H056289CC18', 'H083433CCAE', 'H073430CK63', 'H080125CKX9', 'H070416CCAS', 'H060991CK37', 'H060991CKX9', 'H082027CKS2', 'H069574CK63', 'H073428CKS2', 'H073582CCAB', 'H073583CKAB', 'H080125CC10', 'H082060CKX9'}
+
+success_count = 0
+fail_count = 0
+found_count = 0
+cookie_string = ''
+def createCookieString(cookies):
+    global cookie_string
+    cookie_string = ''
+    for index, cookie in enumerate(cookies):
+        name = cookie['name']
+        # if name in ['datadome', 'ECOM_SESS', 'correlation_id']
+        if index == (len(cookies) - 1):
+            cookie_string = cookie_string + cookie['name'] + '=' + cookie['value']
+        else:
+            cookie_string = cookie_string + cookie['name'] + '=' + cookie['value'] + '; '
+    print(cookie_string)
+
+def parseResponseHeaders(header):
+    newcookie = header['Set-Cookie']
+    result = re.match('datadome.+?(?=;)', newcookie)
+    if result:
+        updateDatadomeCookie(result[0])
+
+def updateDatadomeCookie(text):
+    global cookie_string
+    print('writing new datadome cookie', text)
+    text_after = re.sub('datadome.+?(?=;)', text, cookie_string)
+    cookie_string = text_after
+    print(f'new Cookie {cookie_string}')
+
+def createRequest(proxy):
+    global fail_count
+    proxy_url = "http://atlas.p.shifter.io:17230"
+    print('proxy ', proxy)
+    manager = ProxyManager(proxy,
+                           timeout=5,
+                           cert_reqs='CERT_REQUIRED',
+                           ca_certs=certifi.where())
+
+    headers = util.make_headers(accept_encoding='gzip, deflate, br',
+                                keep_alive=True,
+                                user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0")
+
+    # headers below used for HTML page requests
+    headers['Accept-Language'] = "en-US,en;q=0.5"
+    headers['Connection'] = 'keep-alive'
+    headers['Accept'] = 'application/json, text/plain, */*'
+    headers['Host'] = "bck.hermes.com"
+    headers['sec-ch-ua'] = ' Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98"'
+    headers['sec-ch-ua-mobile'] = '?0'
+    headers['sec-ch-ua-platform'] = 'Windows'
+    headers['Origin'] = 'https://www.hermes.com'
+    headers['Referer'] = 'https://www.hermes.com/'
+    headers['Sec-Fetch-Dest'] = 'empty'
+    headers['Sec-Fetch-Mode'] = 'cors'
+    headers['Sec.Fetch-Site'] = 'same-site'
+    # headers['Cache-Control'] = 'no-cache'
+    headers['Cookie'] = cookie_string
+
+    while True:
+        print(f'getting bags/clutches {datetime.now()}')
+        response = manager.request('GET',
+                                   # 'http://223.16.167.139:3000/new',
+                                   'https://bck.hermes.com/products?urlParams=fh_view_size=40&country=be&fh_refpath=6c988665-bf8f-4407-bccb-4f7e31f6db49&fh_reffacet=object_type_filter&fh_refview=lister&fh_location=//catalog01/en_US/is_visible>{be}/is_searchable>{be}/is_sellable>{be}/has_stock>{be}/item_type=product/categories<{catalog01_women_womenbagssmallleathergoods_womenbagsbagsclutches}/object_type_filter>{sacs_porte_epaule;sacs_porte_main}&locale=be_en&category=WOMENBAGSBAGSCLUTCHES&sort=relevance&pagesize=40',
+                                   # 'https://bck.hermes.com/products?locale=be_en&category=WOMENBAGSBAGSCLUTCHES&sort=pricedsc&pagesize=40&facet_category=sacs_porte_epaule',
+                                   preload_content=False,
+                                   headers=headers)
+        # content = json.loads(response.data)
+        if response.status == 403:
+            print('failed')
+            fail_count += 1
+            return
+        print(response.headers)
+        print(response.data)
+        parseData(response.data)
+
+        parseResponseHeaders(response.headers)
+
+        time.sleep(random.uniform(7.1, 14.1))
+        headers['Cookie'] = cookie_string
+        print(f'getting small leather goods {datetime.now()}')
+        response = manager.request('GET',
+                                   # 'http://223.16.167.139:3000/new',
+                                   'https://bck.hermes.com/products?locale=au_en&category=WOMENBAGSSMALLLEATHER&sort=pricedsc&pagesize=40',
+
+                                   preload_content=False,
+                                   headers=headers)
+        # content = json.loads(response.data)
+        if response.status == 403:
+            print('failed')
+            fail_count += 1
+            return
+        print(response.headers)
+        print(response.data)
+        parseData(response.data)
+        parseResponseHeaders(response.headers)
+
+        time.sleep(random.uniform(7.1, 14.1))
+        headers['Cookie'] = cookie_string
+
+def parseData(data):
+    global success_count
+    global fail_count
+    global found_count
+    print('parsing data')
+    try:
+        d = json.loads(data)
+        items = d['products']['items']
+        success_count += 1
+        print(f'success: {success_count} fail: {fail_count} found: {found_count}')
+        for item in items:
+            item_sku = item['sku']
+            hasStock = item['stock']['ecom']
+            if any(sku in item_sku for sku in sku_set):
+                if hasStock:
+                    print(f'found bag {item_sku}')
+                    found_count += 1
+                    url = item['url']
+                    link = 'https://www.hermes.com/au/en' + url
+                    fulllink = 'http://223.16.167.139:3000/newmu?link=' + link
+                    requests.get(fulllink)
+
+    except Exception as e:
+        print(f'parse data failed {e}')
+        fail_count += 1
+        print(f'success: {success_count} fail: {fail_count} found: {found_count}')
+        pass
